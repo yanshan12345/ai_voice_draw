@@ -1,5 +1,23 @@
 <template>
   <div class="voice-control">
+    <!-- 文本输入（测试用，已注释）
+    <div class="control-group text-input-group">
+      <input
+        v-model="textInput"
+        type="text"
+        placeholder="输入指令测试（无需麦克风）"
+        @keyup.enter="handleTextSubmit"
+        :disabled="canvasStore.status === 'processing' || canvasStore.status === 'generating'"
+      />
+      <button
+        @click="handleTextSubmit"
+        :disabled="!textInput.trim() || canvasStore.status === 'processing' || canvasStore.status === 'generating'"
+      >
+        发送
+      </button>
+    </div>
+    -->
+
     <div class="control-group">
       <button
         @click="handleContinuousListening"
@@ -85,6 +103,7 @@ interface Props {
   onClear: () => void
   onSave: (format: 'png' | 'jpg') => void
   onToggleTTS: () => void
+  onTextInput?: (text: string) => void
   canUndo: boolean
   canRedo: boolean
   ttsEnabled: boolean
@@ -93,6 +112,7 @@ interface Props {
 const props = defineProps<Props>()
 const canvasStore = useCanvasStore()
 const saveFormat = ref<'png' | 'jpg'>('png')
+const textInput = ref('')
 
 const statusText = computed(() => {
   const statusMap = {
@@ -139,6 +159,14 @@ const handleSave = () => {
 const handleToggleTTS = () => {
   props.onToggleTTS()
 }
+
+const handleTextSubmit = () => {
+  const text = textInput.value.trim()
+  if (text && props.onTextInput) {
+    props.onTextInput(text)
+    textInput.value = ''
+  }
+}
 </script>
 
 <style scoped>
@@ -152,12 +180,27 @@ const handleToggleTTS = () => {
   border-top: 1px solid #ddd;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   z-index: 999;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .control-group {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
+}
+
+.text-input-group {
+  flex: 1;
+  max-width: 400px;
+}
+
+.text-input-group input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 button {
@@ -203,5 +246,6 @@ select {
   border-radius: 4px;
   font-size: 14px;
   color: #666;
+  margin-left: auto;
 }
 </style>

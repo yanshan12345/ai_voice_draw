@@ -155,15 +155,6 @@ cp .env.example .env
 # 阿里云百炼平台API密钥
 ALIYUN_API_KEY=your_aliyun_api_key_here
 
-# 通义千问对话模型 (qwen-plus / qwen-turbo / qwen-max)
-QWEN_CHAT_MODEL=qwen-plus
-
-# 通义万象图像生成模型 (wanx-v1 / wanx-sketch-to-image-v1)
-QWEN_IMAGE_MODEL=wanx-v1
-
-# API请求配置
-MAX_RETRIES=3
-TIMEOUT=30
 ```
 
 #### 3. 前端配置
@@ -242,41 +233,9 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001
 
 ---
 
-## 📋 开发计划
-
-### ✅ Phase 1: 核心功能
-- [x] 前端基础架构
-- [ ] 语音输入输出模块
-- [ ] 画布渲染引擎
-- [ ] 后端API框架
-- [ ] 指令解析服务
-- [ ] AI图像生成集成
-
-### ⏳ Phase 2: 完整MVP
-- [ ] 历史管理（撤销/重做）
-- [ ] 导出功能
-- [ ] 错误处理完善
-- [ ] 前后端联调
-- [ ] 基础测试
-
-### 🔮 Phase 3: 优化增强
-- [ ] 几何图形绘制模式
-- [ ] 帮助系统
-- [ ] 性能优化
-- [ ] 完整文档
-- [ ] 部署上线
-
-**当前进度**: 0/26 任务完成 (0%)  
-详见 [开发进度跟踪](doc/tasks/progress.md)
-
----
-
 ## 📚 文档
 
-- [用户使用指南](doc/USER_GUIDE.md) - 完整的用户操作手册和指令列表
-- [需求文档](doc/requirements.md) - 完整的功能需求和用例说明
 - [设计文档](doc/design.md) - 技术架构和模块设计
-- [任务列表](doc/tasks/) - 详细的开发任务分解
 
 ---
 
@@ -334,14 +293,6 @@ pytest
 - FastAPI 自动生成 API 文档 `/docs`
 - Python debugger (pdb)
 - 查看日志输出
-
-### 贡献指南
-
-1. Fork 本项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
 
 ## 🎯 设计原则
 

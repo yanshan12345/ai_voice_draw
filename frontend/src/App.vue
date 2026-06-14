@@ -67,6 +67,12 @@ const handleToggleTTS = () => {
   voiceOutput.setEnabled(ttsEnabled.value)
   voiceOutput.speak(ttsEnabled.value ? '语音播报已打开' : '语音播报已关闭')
 }
+
+const handleTextInput = (text: string) => {
+  // 直接触发 VoiceCanvas 的语音处理逻辑
+  const event = new CustomEvent('text-input', { detail: text })
+  window.dispatchEvent(event)
+}
 </script>
 
 <template>
@@ -82,6 +88,7 @@ const handleToggleTTS = () => {
       :on-clear="handleClear"
       :on-save="handleSave"
       :on-toggle-t-t-s="handleToggleTTS"
+      :on-text-input="handleTextInput"
       :can-undo="canUndo"
       :can-redo="canRedo"
       :tts-enabled="ttsEnabled"
@@ -94,6 +101,14 @@ const handleToggleTTS = () => {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
+}
+
+#app > :nth-child(2) {
+  /* VoiceCanvas 容器 */
+  margin-top: 60px;
+  margin-bottom: 80px;
+  flex: 1;
   overflow: hidden;
 }
 </style>

@@ -55,16 +55,19 @@ const statusClass = computed(() => {
   right: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 16px 24px;
+  padding: 12px 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .voice-text {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
-  margin-bottom: 8px;
-  min-height: 32px;
+  flex: 1;
+  min-width: 200px;
 }
 
 .status-info {
@@ -78,6 +81,7 @@ const statusClass = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .status-icon {
@@ -106,6 +110,7 @@ const statusClass = computed(() => {
   padding: 4px 12px;
   border-radius: 4px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 @keyframes pulse {
