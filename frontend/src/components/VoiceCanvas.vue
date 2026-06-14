@@ -72,11 +72,28 @@ onMounted(() => {
     store.setStatus('listening')
   })
 
+  // 自动启动持续监听
   voiceInput.startContinuousListening()
+
+  // 监听文本输入事件（用于测试）
+  window.addEventListener('text-input', (e: Event) => {
+    const text = (e as CustomEvent).detail
+    store.setCurrentVoiceText(text)
+    handleVoiceResult(text)
+  })
+
+  // 监听图像加载完成事件
+  window.addEventListener('image-loaded', () => {
+    console.log('[VoiceCanvas] 图像加载完成，触发重新渲染')
+    canvasRenderer.render(store.getSortedObjects)  // getter，不加括号
+  })
 })
 
 watch(() => store.objects, () => {
-  canvasRenderer.render(store.getSortedObjects)
+  console.log('[VoiceCanvas] watch 被触发，对象数量:', store.objects.length)
+  const sorted = store.getSortedObjects  // getter，不加括号
+  console.log('[VoiceCanvas] 排序后的对象:', sorted)
+  canvasRenderer.render(sorted)
 }, { deep: true })
 
 async function handleVoiceResult(text: string) {
@@ -94,11 +111,13 @@ async function handleVoiceResult(text: string) {
     const preprocessResult = commandPreprocessor.preprocess(text)
     if (preprocessResult.isHandled && preprocessResult.command) {
       executeLocalCommand(preprocessResult.command)
+      store.setStatus('idle')  // 重置状态
       return
     }
 
     // 2. 发送后端解析
     const canvasState = buildCanvasStateDTO()
+    console.log('[VoiceCanvas] 发送指令到后端:', text)
     const response = await apiService.parseCommand(text, canvasState)
 
     if (!response.success || !response.command) {
@@ -123,14 +142,25 @@ async function handleVoiceResult(text: string) {
     store.setStatus('idle')
   } catch (error) {
     const msg = error instanceof Error ? error.message : '操作失败'
+    console.error('[VoiceCanvas] 错误:', msg, error)
+
     // 忽略取消的请求
     if (msg === 'canceled' || msg.includes('abort')) {
+      console.log('[VoiceCanvas] 请求被取消')
       store.setStatus('idle')
       return
     }
-    store.setError(msg)
-    voiceOutput.speak(msg)
-    store.setStatus('idle')
+
+    // 处理超时错误
+    if (msg.includes('timeout')) {
+      store.setError('请求超时，请检查网络连接或后端服务')
+      voiceOutput.speak('请求超时')
+    } else {
+      store.setError(msg)
+      voiceOutput.speak(msg)
+    }
+
+    store.setStatus('idle')  // 确保状态被重置
   }
 }
 
@@ -197,10 +227,17 @@ async function handleImageGeneration(command: ParsedCommand) {
 }
 
 function createImageObject(imageUrl: string, params: any) {
+  console.log('[VoiceCanvas] createImageObject 被调用')
+  console.log('[VoiceCanvas] 图像URL:', imageUrl)
+  console.log('[VoiceCanvas] 参数:', params)
+
+  // 生成唯一且有意义的名称
+  const defaultName = params.name || `图像${store.objects.length + 1}`
+
   const obj: CanvasObject = {
     id: `obj-${Date.now()}`,
     type: 'image',
-    name: params.name || '图像',
+    name: defaultName,
     position: params.position || { x: 960, y: 540 },
     size: params.size || { width: 200, height: 200 },
     rotation: 0,
@@ -212,16 +249,61 @@ function createImageObject(imageUrl: string, params: any) {
       naturalHeight: 1024
     }
   }
+
+  console.log('[VoiceCanvas] 创建的对象:', obj)
+  console.log('[VoiceCanvas] 添加前 store.objects 长度:', store.objects.length)
+
   store.addObject(obj)
+
+  console.log('[VoiceCanvas] 添加后 store.objects 长度:', store.objects.length)
+  console.log('[VoiceCanvas] 当前所有对象:', store.objects)
 }
 
 function executeCommand(command: ParsedCommand) {
+  console.log('[VoiceCanvas] executeCommand 被调用, intent:', command.intent)
+  console.log('[VoiceCanvas] command:', command)
+
   switch (command.intent) {
     case 'adjust_object':
       if (command.target) {
         const obj = store.getObjectByName(command.target) || store.getObjectById(command.target)
+        console.log('[VoiceCanvas] 找到的对象:', obj)
+        console.log('[VoiceCanvas] 调整参数:', command.parameters)
+
         if (obj) {
-          store.updateObject(obj.id, command.parameters)
+          // 处理相对调整（如"放大3倍"）
+          const updates: Partial<CanvasObject> = {}
+
+          // 处理尺寸调整
+          if (command.parameters.size) {
+            updates.size = command.parameters.size
+          } else if (command.parameters.scale) {
+            // 如果是缩放倍数
+            const scale = command.parameters.scale
+            updates.size = {
+              width: obj.size.width * scale,
+              height: obj.size.height * scale
+            }
+          }
+
+          // 处理位置调整
+          if (command.parameters.position) {
+            updates.position = command.parameters.position
+          }
+
+          // 处理其他属性
+          if (command.parameters.rotation !== undefined) {
+            updates.rotation = command.parameters.rotation
+          }
+          if (command.parameters.opacity !== undefined) {
+            updates.opacity = command.parameters.opacity
+          }
+
+          console.log('[VoiceCanvas] 应用的更新:', updates)
+          store.updateObject(obj.id, updates)
+          console.log('[VoiceCanvas] 更新后的对象:', store.getObjectById(obj.id))
+        } else {
+          console.log('[VoiceCanvas] 未找到目标对象:', command.target)
         }
       }
       break
@@ -262,23 +344,24 @@ function buildCanvasContext(): string {
   display: flex;
   justify-content: center;
   align-items: center;
-  flex: 1;
   width: 100%;
+  height: 100%;
   background: #f5f5f5;
-  overflow: hidden;
-  padding-top: 100px;
-  padding-bottom: 180px;
+  overflow: auto;
 }
 
 canvas {
   border: 1px solid #ddd;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   background: white;
+  max-width: 95%;
+  max-height: 95%;
+  object-fit: contain;
 }
 
 .voice-text {
   position: absolute;
-  bottom: 100px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0,0,0,0.8);
@@ -286,6 +369,7 @@ canvas {
   padding: 12px 24px;
   border-radius: 8px;
   font-size: 16px;
+  z-index: 10;
 }
 
 .status-indicator {
@@ -296,6 +380,7 @@ canvas {
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
+  z-index: 10;
 }
 
 .status-indicator.idle {
@@ -328,5 +413,6 @@ canvas {
   border-radius: 6px;
   font-size: 14px;
   max-width: 300px;
+  z-index: 10;
 }
 </style>

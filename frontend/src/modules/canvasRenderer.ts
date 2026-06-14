@@ -30,9 +30,20 @@ class CanvasRenderer implements CanvasRendererModule {
   render(objects: CanvasObject[]): void {
     if (!this.ctx || !this.canvas) return
 
-    const objectsHash = JSON.stringify(objects.map(o => ({ id: o.id, position: o.position, rotation: o.rotation, opacity: o.opacity })))
+    console.log('[CanvasRenderer] render() 被调用, 对象数量:', objects.length)
+
+    // 包含所有影响渲染的属性
+    const objectsHash = JSON.stringify(objects.map(o => ({
+      id: o.id,
+      position: o.position,
+      size: o.size,
+      rotation: o.rotation,
+      opacity: o.opacity,
+      data: o.type === 'image' ? (o.data as any).url : o.data
+    })))
 
     if (objectsHash === this.lastObjectsHash && !this.isDirty) {
+      console.log('[CanvasRenderer] 跳过渲染（无变化）')
       return
     }
 
@@ -44,6 +55,7 @@ class CanvasRenderer implements CanvasRendererModule {
     const sorted = [...objects].sort((a, b) => a.zIndex - b.zIndex)
 
     for (const obj of sorted) {
+      console.log('[CanvasRenderer] 渲染对象:', obj.name, obj.type)
       this.ctx.save()
       this.ctx.globalAlpha = obj.opacity
       this.ctx.translate(obj.position.x, obj.position.y)
@@ -57,6 +69,7 @@ class CanvasRenderer implements CanvasRendererModule {
 
       this.ctx.restore()
     }
+    console.log('[CanvasRenderer] 渲染完成')
   }
 
   markDirty(): void {
@@ -85,10 +98,21 @@ class CanvasRenderer implements CanvasRendererModule {
   private loadImage(url: string): void {
     if (this.imageCache.has(url)) return
 
+    console.log('[CanvasRenderer] 开始加载图像:', url)
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => {
+      console.log('[CanvasRenderer] 图像加载成功:', url)
       this.imageCache.set(url, img)
+      this.markDirty()
+      // 触发重新渲染
+      if (this.canvas) {
+        const event = new CustomEvent('image-loaded')
+        window.dispatchEvent(event)
+      }
+    }
+    img.onerror = (e) => {
+      console.error('[CanvasRenderer] 图像加载失败:', url, e)
     }
     img.src = url
     this.imageCache.set(url, img)

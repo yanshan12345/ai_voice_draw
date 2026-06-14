@@ -85,19 +85,19 @@ class ApiService {
   }
 
   /**
-   * 解析语音指令（带防抖和取消机制）
+   * 解析语音指令（带取消机制）
    */
   async parseCommand(text: string, canvasState: CanvasStateDTO): Promise<CommandResponse> {
     const key = 'parseCommand'
-    return this.debounce(key, async () => {
-      const signal = this.createAbortSignal(key)
-      const request: CommandRequest = {
-        text,
-        canvas_state: canvasState
-      }
-      const response = await this.client.post<CommandResponse>('/command/parse', request, { signal })
-      return response.data
-    }, 300)
+    const signal = this.createAbortSignal(key)
+    const request: CommandRequest = {
+      text,
+      canvas_state: canvasState
+    }
+    console.log('[ApiService] 发送parseCommand请求:', request)
+    const response = await this.client.post<CommandResponse>('/command/parse', request, { signal })
+    console.log('[ApiService] 收到parseCommand响应:', response.data)
+    return response.data
   }
 
   /**
