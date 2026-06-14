@@ -81,25 +81,43 @@ ai_voice_draw/
 ├── frontend/                 # 前端项目
 │   ├── src/
 │   │   ├── components/      # Vue组件
-│   │   ├── modules/         # 核心模块（语音、画布、历史等）
+│   │   │   ├── VoiceCanvas.vue      # 画布组件
+│   │   │   ├── VoiceControl.vue     # 语音控制面板
+│   │   │   ├── StatusBar.vue        # 状态栏
+│   │   │   └── HelpDialog.vue       # 帮助对话框
+│   │   ├── modules/         # 核心模块
+│   │   │   ├── voiceInput.ts        # 语音识别
+│   │   │   ├── voiceOutput.ts       # 语音合成
+│   │   │   ├── canvasRenderer.ts    # 画布渲染
+│   │   │   ├── historyManager.ts    # 历史管理
+│   │   │   ├── commandPreprocessor.ts # 指令预处理
+│   │   │   └── exporter.ts          # 导出功能
 │   │   ├── stores/          # Pinia状态管理
+│   │   │   └── canvasStore.ts       # 画布状态
 │   │   ├── services/        # API服务
+│   │   │   └── apiService.ts        # 后端API调用
 │   │   ├── types/           # TypeScript类型定义
+│   │   │   └── index.ts
 │   │   └── utils/           # 工具函数
-│   └── package.json
+│   ├── package.json
+│   └── vite.config.ts
 ├── backend/                  # 后端项目
 │   ├── app/
+│   │   ├── main.py          # 应用入口
 │   │   ├── routes.py        # API路由
-│   │   ├── services/        # 业务逻辑（AI服务、指令解析）
+│   │   ├── services/        # 业务逻辑
+│   │   │   ├── ai_service.py        # AI服务
+│   │   │   └── command_parser.py    # 指令解析
 │   │   ├── models/          # 数据模型
+│   │   │   └── schemas.py
 │   │   └── config.py        # 配置管理
 │   ├── .env                 # 环境变量
 │   └── requirements.txt
 └── doc/                      # 文档
     ├── requirements.md       # 需求文档
     ├── design.md             # 设计文档
+    ├── USER_GUIDE.md         # 用户使用指南
     └── tasks/                # 任务文档
-        └── progress.md       # 开发进度
 ```
 
 ---
@@ -107,46 +125,91 @@ ai_voice_draw/
 ## 🚀 快速开始
 
 ### 前置要求
-- Node.js 18+
-- Python 3.11+
-- 阿里云百炼平台API密钥
-- Chrome/Edge浏览器（支持Web Speech API）
+- **Node.js**: 18+ 
+- **Python**: 3.11+
+- **阿里云百炼平台API密钥**: [获取地址](https://bailian.console.aliyun.com/)
+- **浏览器**: Chrome 90+ 或 Edge 90+ (支持Web Speech API)
 
-### 后端启动
+### 安装步骤
+
+#### 1. 克隆项目
+```bash
+git clone <repository-url>
+cd ai_voice_draw
+```
+
+#### 2. 后端配置
 
 ```bash
 cd backend
 
-# 安装依赖
+# 安装Python依赖
 pip install -r requirements.txt
 
 # 配置环境变量
 cp .env.example .env
-# 编辑 .env 填入你的阿里云API密钥
-
-# 启动服务
-uvicorn app.main:app --reload --port 8000
 ```
 
-后端服务运行在 `http://localhost:8000`
+编辑 `backend/.env` 文件，配置以下参数：
+```env
+# 阿里云百炼平台API密钥
+ALIYUN_API_KEY=your_aliyun_api_key_here
 
-### 前端启动
+# 通义千问对话模型 (qwen-plus / qwen-turbo / qwen-max)
+QWEN_CHAT_MODEL=qwen-plus
+
+# 通义万象图像生成模型 (wanx-v1 / wanx-sketch-to-image-v1)
+QWEN_IMAGE_MODEL=wanx-v1
+
+# API请求配置
+MAX_RETRIES=3
+TIMEOUT=30
+```
+
+#### 3. 前端配置
 
 ```bash
 cd frontend
 
-# 安装依赖
+# 安装Node.js依赖
 npm install
-
-# 启动开发服务器
-npm run dev
 ```
 
-前端服务运行在 `http://localhost:5173`
+### 运行命令
 
-### 浏览器访问
+#### 启动后端服务
+```bash
+cd backend
+uvicorn app.main:app --reload --port 8001
+```
+后端API运行在 `http://localhost:8001`  
+API文档访问 `http://localhost:8001/docs`
 
-打开 Chrome/Edge 浏览器，访问 `http://localhost:5173`，点击"开始监听"按钮，开始语音创作！
+#### 启动前端服务
+```bash
+cd frontend
+npm run dev
+```
+前端应用运行在 `http://localhost:5173`
+
+#### 生产构建
+```bash
+# 前端构建
+cd frontend
+npm run build
+
+# 后端部署
+cd backend
+uvicorn app.main:app --host 0.0.0.0 --port 8001
+```
+
+### 首次使用
+
+1. 打开 Chrome/Edge 浏览器
+2. 访问 `http://localhost:5173`
+3. 允许浏览器访问麦克风权限
+4. 点击"开始监听"按钮
+5. 说出指令"生成一个红色的太阳"开始创作！
 
 ---
 
@@ -210,19 +273,83 @@ npm run dev
 
 ## 📚 文档
 
+- [用户使用指南](doc/USER_GUIDE.md) - 完整的用户操作手册和指令列表
 - [需求文档](doc/requirements.md) - 完整的功能需求和用例说明
 - [设计文档](doc/design.md) - 技术架构和模块设计
 - [任务列表](doc/tasks/) - 详细的开发任务分解
-- [开发进度](doc/tasks/progress.md) - 实时跟踪开发状态
 
 ---
+
+## 👨‍💻 开发者指南
+
+### 开发环境配置
+
+**必需工具**:
+- Node.js 18+ (推荐使用 nvm 管理版本)
+- Python 3.11+ (推荐使用 pyenv 或 conda)
+- Git
+- VS Code (推荐，已配置工作区设置)
+
+**推荐扩展**:
+- Vue Language Features (Volar)
+- TypeScript Vue Plugin (Volar)
+- Python
+- Pylance
+
+### 代码规范
+
+**前端 (TypeScript/Vue)**:
+- 遵循 Vue 3 Composition API 最佳实践
+- 使用 TypeScript 严格模式
+- 组件命名使用 PascalCase
+- 函数/变量命名使用 camelCase
+- 类型定义统一放在 `src/types/`
+
+**后端 (Python)**:
+- 遵循 PEP 8 代码风格
+- 使用类型注解 (Type Hints)
+- 函数/变量命名使用 snake_case
+- 模型定义使用 Pydantic
+
+### 测试
+
+```bash
+# 前端测试
+cd frontend
+npm run test
+
+# 后端测试
+cd backend
+pytest
+```
+
+### 调试
+
+**前端调试**:
+- 使用浏览器开发者工具
+- Vue DevTools 扩展
+- `console.log` / `debugger`
+
+**后端调试**:
+- FastAPI 自动生成 API 文档 `/docs`
+- Python debugger (pdb)
+- 查看日志输出
+
+### 贡献指南
+
+1. Fork 本项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
 
 ## 🎯 设计原则
 
 1. **无障碍优先** - 完全支持纯语音操作
-2. **模块独立** - 各模块通过接口通信，便于测试
+2. **模块独立** - 各模块通过接口通信，便于测试和维护
 3. **用户友好** - 提供视觉和语音双重反馈
 4. **简单部署** - 无需数据库，配置即用
+5. **类型安全** - 前后端均使用类型系统保证代码质量
 
 ---
 
